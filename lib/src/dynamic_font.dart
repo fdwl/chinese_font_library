@@ -58,7 +58,7 @@ class DynamicFont {
     return await file.exists();
   }
 
-  Future<bool> load() async {
+  Future<bool> load({void Function(double progress)? downloadProgress}) async {
     switch (_source) {
       case _FontSource.asset:
         try {
@@ -88,7 +88,9 @@ class DynamicFont {
       case _FontSource.url:
         try {
           await loadFontFromList(
-            await downloadFont(uri, overwrite: overwrite ?? false),
+            await downloadFont(uri,
+                overwrite: overwrite ?? false,
+                downloadProgress: downloadProgress),
             fontFamily: fontFamily,
           );
           return true;
