@@ -32,6 +32,32 @@ class DynamicFont {
       : _source = _FontSource.url,
         uri = url;
 
+  //debug
+  bool testLoaded() {
+    final customFont = TextPainter(
+      text: TextSpan(
+        text: 'Hello, Flutter!',
+        style: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 24,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    return customFont.size.width > 0 && customFont.size.height > 0;
+  }
+
+  //文件是否已经下载, 仅对网络URL有效
+  Future<bool> isDownloaded() async {
+    if (_source != _FontSource.url) return false;
+
+    final dir = (await getApplicationSupportDirectory()).path;
+    final filename = Uri.parse(uri).pathSegments.last;
+    final file = File('$dir/$filename');
+    return await file.exists();
+  }
+
   Future<bool> load() async {
     switch (_source) {
       case _FontSource.asset:
@@ -76,7 +102,9 @@ class DynamicFont {
   }
 }
 
-Future<Uint8List> downloadFont(String url, {bool overwrite = false}) async {
+Future<Uint8List> downloadFont(String url,
+    {bool overwrite = false,
+    void Function(double progress)? downloadProgress}) async {
   final uri = Uri.parse(url);
   final filename = uri.pathSegments.last;
   final dir = (await getApplicationSupportDirectory()).path;
@@ -86,7 +114,7 @@ Future<Uint8List> downloadFont(String url, {bool overwrite = false}) async {
     return await file.readAsBytes();
   }
 
-  final bytes = await downloadBytes(uri);
+  final bytes = await downloadBytes(uri, downloadProgress: downloadProgress);
   file.writeAsBytes(bytes);
   return bytes;
 }
@@ -100,7 +128,8 @@ Future<void> downloadFontTo(String url,
   await file.writeAsBytes(await downloadBytes(uri));
 }
 
-Future<Uint8List> downloadBytes(Uri uri) async {
+Future<Uint8List> downloadBytes(Uri uri,
+    {void Function(double progress)? downloadProgress}) async {
   final client = http.Client();
   final request = http.Request('GET', uri);
   final response =
@@ -120,6 +149,7 @@ Future<Uint8List> downloadBytes(Uri uri) async {
     } else {
       final percent = ((bytes.length / response.contentLength!) * 100);
       if (percent - prevPercent > 15 || percent > 99) {
+        downloadProgress?.call(percent);
         debugPrint('download font: ${percent.toStringAsFixed(1)}%');
         prevPercent = percent;
       }
