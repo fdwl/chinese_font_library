@@ -149,12 +149,16 @@ Future<Uint8List> downloadBytes(Uri uri,
     if (response.contentLength == null) {
       debugPrint('download font: ${bytes.length} bytes');
     } else {
-      final percent = ((bytes.length / response.contentLength!) * 100);
-      if (percent - prevPercent > 15 || percent > 99) {
-        downloadProgress?.call(percent);
-        debugPrint('download font: ${percent.toStringAsFixed(1)}%');
-        prevPercent = percent;
+      final progress = bytes.length / response.contentLength!;
+      if (progress - prevPercent > 0.1 || progress > 0.99) {
+        downloadProgress?.call(progress);
+        prevPercent = progress;
       }
+      // final percent = ((bytes.length / response.contentLength!) * 100);
+      // if (percent - prevPercent > 15 || percent > 99) {
+      //   debugPrint('download font: ${percent.toStringAsFixed(1)}%');
+      //   prevPercent = percent;
+      // }
     }
   }).asFuture();
 
